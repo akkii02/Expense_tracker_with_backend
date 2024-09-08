@@ -27,6 +27,27 @@ app.post("/user/signup", async (req, res) => {
     }
 });
 
+app.post("/user/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await UserSequelize.findOne({ where: { email } });
+        
+        if (!user) {
+            return res.status(403).send("User not found");
+        }
+
+        if (user.password !== password) {
+            return res.status(403).send("Invalid password");
+        }
+
+        res.send("Login successful");
+    } catch (err) {
+        console.error('Error logging in user:', err.message);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+
 sequelize.sync()
     .then(() => {
         app.listen(port, () => {
