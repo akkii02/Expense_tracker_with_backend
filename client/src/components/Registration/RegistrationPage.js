@@ -9,7 +9,7 @@ const RegistrationPage = () => {
                 <input type="text" placeholder="Name" name="name" />
                 <input type="email" placeholder="Email" name="email" />
                 <input type="password" placeholder="Password" name="password" />
-                <button type="submit">SignUp</button>
+                <button type="submit">Signp</button>
             </form>
             <p>Already have an account? <a href="#">Login</a></p>
             </div>
