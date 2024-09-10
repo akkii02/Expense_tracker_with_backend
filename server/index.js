@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const sequelize = require("../server/utils/db");
 const UserSequelize = require("../server/models/UserSequelize");
+const UserData = require("../server/models/UserData");
 const bcrypt = require("bcrypt");
 const port = 3000;
 
@@ -58,6 +59,27 @@ app.post("/user/login", async (req, res) => {
         });
     } catch (err) {
         console.error("Error logging in user:", err.message);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+app.post("/",async(req,res)=>{
+    const {amount,category,description} = req.body;
+    try{
+        await UserData.create({ amount, category, description });
+        res.status(201).send("Expense added successfully");
+    }catch(error){
+        console.error("Error adding expense:", error.message);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+app.get("/",async(rwq,res)=>{
+    try{
+        const expenses = await UserData.findAll();
+        res.json(expenses);
+    }catch(error){
+        console.error("Error fetching expenses:", error.message);
         res.status(500).send("Internal Server Error");
     }
 });

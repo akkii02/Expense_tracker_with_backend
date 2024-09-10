@@ -1,10 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css"; 
 import React, { useRef, useState } from "react";
+import { login } from "../../Store/authSlice";
+import { useDispatch } from "react-redux";
+
 
 const LoginPage = () => {
     const [error, setError] = useState("");    
     const formRef = useRef(null);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -32,6 +37,8 @@ const LoginPage = () => {
             }
             const result = await response.text();
             alert(result); 
+            dispatch(login());
+            navigate("/");  
             setError(""); 
         } catch (error) {
             setError(error.message);
