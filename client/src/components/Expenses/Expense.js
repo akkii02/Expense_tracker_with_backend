@@ -1,3 +1,4 @@
+import { useSelector } from "react-redux";
 import styles from "./Expense.module.css";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -5,6 +6,8 @@ const Expense = () => {
   const [expenseData,getExpenseData] = useState([]);
   const [update,setUpdate] = useState(false);
   const formRef = useRef(null);
+  const token = useSelector((state)=>state.auth.token)
+  console.log(token,"userIdExpense")
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -13,14 +16,15 @@ const Expense = () => {
     let data = {
       amount: formData.get("amount"),
       category: formData.get("category"),
-      description: formData.get("description")
+      description: formData.get("description"),
     };
   
     try {
       const response = await fetch("http://localhost:3000/", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data)
       });
@@ -41,14 +45,38 @@ const Expense = () => {
   };
   useEffect(()=>{
     const fetchData = async() => {
-      const response = await fetch("http://localhost:3000/")
+      const response = await fetch(`http://localhost:3000`, {
+        headers: {
+          Authorization: `Bearer ${token}`, 
+        },
+      });
       const data = await response.json();
       console.log("getData",data); 
       getExpenseData(data);
     };
     fetchData();
-  },[update])
 
+  },[update,token])
+
+  const deleteExpense = async(id) => {
+  try {
+    const response = await fetch(`http://localhost:3000/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`, 
+      },
+    });
+
+    if (response.ok) {
+      console.log("Expense deleted successfully");
+      setUpdate(!update); // Re-fetch data after deletion
+    } else {
+      console.error("Failed to delete expense");
+    }
+  } catch (error) {
+    console.error("Error deleting expense:", error);
+  }
+};
   return (
     <div className={styles.mainContainer}>
       <div className={styles.expenseInput}>
@@ -90,7 +118,7 @@ const Expense = () => {
             expenseData.length === 0 ? <p>Data Not Found</p> :
             expenseData.map((expense)=>{
               return(
-                <li key={expense._id}>
+                <li key={expense.id}>
                   <div className={styles.data}>
                   <p>{expense.category}</p>
                   <p>{expense.amount}</p>
@@ -98,7 +126,7 @@ const Expense = () => {
                   </div>
                   <div className={styles.DataBtns}>
                     <button>Edit</button>
-                    <button>Delete</button>
+                    <button onClick={()=>deleteExpense(expense.id)}>Delete</button>
                   </div>
                 </li>
               )

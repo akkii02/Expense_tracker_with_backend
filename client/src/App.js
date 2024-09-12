@@ -11,8 +11,8 @@ function App() {
   return (
     <Router>
     <Routes> 
-        <Route path="/" element={isLogin ? <Expense/> :<RegistrationPage />} />
-        <Route path="/login" element={<LoginPage/>} />
+        <Route path="/" element={isLogin ? <Expense/> :<LoginPage/>} />
+        <Route path="/signup" element={<RegistrationPage/>} />
         {/* <Route path="/expense" element={<Expense/>}/> */}
     </Routes>
 </Router>

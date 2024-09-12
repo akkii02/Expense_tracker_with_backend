@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css"; 
 import React, { useRef, useState } from "react";
-import { login } from "../../Store/authSlice";
+import { login,setToken } from "../../Store/authSlice";
 import { useDispatch } from "react-redux";
 
 
@@ -35,8 +35,11 @@ const LoginPage = () => {
                 
                 throw new Error(result); 
             }
-            const result = await response.text();
-            alert(result); 
+            const result = await response.json();
+            console.log("res",result);
+            const {message,token} = result;
+            alert(message); 
+            dispatch(setToken(token))
             dispatch(login());
             navigate("/");  
             setError(""); 
@@ -59,7 +62,7 @@ const LoginPage = () => {
                     <button type="submit">Login</button>
                 </form>
                 {error && <p className={styles.error}>{error}</p>}
-                <p>Don't have an account? <Link to="/register">Register</Link></p>
+                <p>Don't have an account? <Link to="/signup">Register</Link></p>
             </div>
         </div>
     );

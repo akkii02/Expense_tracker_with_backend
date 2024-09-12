@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "./RegistrationPage.module.css";
 import React, { useRef, useState } from "react";
 
 const RegistrationPage = () => {
     const [error, setError] = useState("");    
     const formRef = useRef(null);
+    const navigate = useNavigate();
   
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -33,6 +34,7 @@ const RegistrationPage = () => {
             }
             const result = await response.text();
             alert(result); 
+            navigate("/"); 
             setError(""); 
         } catch (error) {
             setError(error.message);
@@ -54,7 +56,7 @@ const RegistrationPage = () => {
                     <button type="submit">Sign Up</button>
                 </form>
                 {error && <p className={styles.error}>{error}</p>}
-                <p>Already have an account? <Link to="/login">Login</Link></p>
+                <p>Already have an account? <Link to="/">Login</Link></p>
             </div>
         </div>
     );
