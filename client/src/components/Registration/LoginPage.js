@@ -3,6 +3,7 @@ import styles from "./LoginPage.module.css";
 import React, { useRef, useState } from "react";
 import { login,setToken } from "../../Store/authSlice";
 import { useDispatch } from "react-redux";
+import { setPremiumUser } from "../../Store/authSlice";
 
 
 const LoginPage = () => {
@@ -37,8 +38,12 @@ const LoginPage = () => {
             }
             const result = await response.json();
             console.log("res",result);
-            const {message,token} = result;
+            const {message,token,receipt} = result;
             alert(message); 
+            if(receipt){
+                console.log("ccc",receipt)
+                dispatch(setPremiumUser())
+            }
             dispatch(setToken(token))
             dispatch(login());
             navigate("/");  

@@ -6,6 +6,7 @@ import { setPremiumUser } from "../../Store/authSlice";
 const Navbar = () => {
   const isLogin = useSelector((state)=>state.auth.isLogin)
   const premiumUser = useSelector((state)=>state.auth.premiumUser)
+  const token = useSelector((state)=>state.auth.token)
   const dispatch = useDispatch();
   useEffect(() => {
     const script = document.createElement("script");
@@ -39,11 +40,19 @@ const options = {
   name: 'Your Expense Tracker',
   description: 'Payment for your expense',
   order_id: order.id, 
-  handler: function (response) {
+  handler:async function (response) {
     alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
-    if(response){
-        dispatch(setPremiumUser())
-    }
+   await fetch("http://localhost:3000/payment-success",{
+    method:"POST",
+    headers:{
+      'Content-Type':'application/json',
+      Authorization:`Bearer ${token}`
+    },
+    body:JSON.stringify({
+      paymentId:response.razorpay_payment_id,
+    }),
+   })
+   dispatch(setPremiumUser())
   },
   prefill: {
     name: 'Akshay Sable',
@@ -68,6 +77,7 @@ console.log("err",err)
             <div className={styles.container}>
                 <h1>Expense Tracker</h1>
                 {premiumUser && isLogin && <button onClick={handlePayment} className={styles.btn}>Buy Premium Membership</button>}
+            {!premiumUser && <p>You are a Premium User</p>}
             </div>
         </div>
     )

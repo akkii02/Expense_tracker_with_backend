@@ -56,9 +56,10 @@ app.post("/user/signup", async (req, res) => {
 
 // Login Route
 app.post("/user/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, } = req.body;
   try {
     const user = await UserSequelize.findOne({ where: { email } });
+    console.log("userLogin",user)
     if (!user) {
       return res.status(403).send("User not found");
     }
@@ -70,7 +71,8 @@ app.post("/user/login", async (req, res) => {
         JWT_SECRET,
         { expiresIn: "1h" }
       );
-      res.json({ message: "Login successful", token });
+      let receipt = user.premiumUserPaymentReceipt
+      res.json({ message: "Login successful", token,receipt });
     } else {
       res.status(403).send("Invalid password");
     }
@@ -98,6 +100,7 @@ app.get("/", authenticateToken, async (req, res) => {
   const userId = req.user.userId;
   try {
     const expenses = await UserData.findAll({ where: { userId } });
+    console.log(expenses,"expenses")
     res.json(expenses);
   } catch (error) {
     console.error("Error fetching expenses:", error.message);
@@ -149,6 +152,46 @@ app.post("/create-order", async (req, res) => {
     } catch (error) {
       console.error("Error creating order:", error);
       res.status(500).json({ error: 'Failed to create order', details: error.message });
+    }
+  });
+  
+  app.post("/payment-success", authenticateToken, async (req, res) => {
+    const { paymentId, orderId } = req.body;
+    const userId = req.user.userId;
+  
+    try {
+      // Find the user by ID
+      const user = await UserSequelize.findOne({ where: { id: userId } });
+  
+      // Check if the user exists
+      if (user) {
+        // Update the user record with the premium payment receipt
+        await user.update({
+          premiumUserPaymentReceipt: paymentId, // Update field
+        });
+  
+        res.status(200).json({ message: "Premium status updated successfully" });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (err) {
+      console.error("Error updating user with receipt ID:", err.message);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+  
+  app.get("/data", authenticateToken, async (req, res) => {
+    try {
+      const allUserData = await UserSequelize.findAll({
+        include: [{
+          model: UserData,
+          as: 'UserData',
+        }],
+      });
+      res.json(allUserData);
+    } catch (error) {
+      console.error(error);  // Correct variable usage
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   });
   
