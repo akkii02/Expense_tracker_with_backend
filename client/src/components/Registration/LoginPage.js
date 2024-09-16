@@ -1,10 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css"; 
 import React, { useRef, useState } from "react";
-import { login,setToken } from "../../Store/authSlice";
+import { login,setToken, setTotalExpense } from "../../Store/authSlice";
 import { useDispatch } from "react-redux";
 import { setPremiumUser } from "../../Store/authSlice";
-
 
 const LoginPage = () => {
     const [error, setError] = useState("");    
@@ -44,6 +43,7 @@ const LoginPage = () => {
                 console.log("ccc",receipt)
                 dispatch(setPremiumUser())
             }
+            // dispatch(setTotalExpense(totalExpense))
             dispatch(setToken(token))
             dispatch(login());
             navigate("/");  

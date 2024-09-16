@@ -1,5 +1,6 @@
-const { DataTypes } = require("sequelize");
+const { DataTypes, Sequelize } = require("sequelize");
 const sequelize = require("../utils/db");
+const { toDefaultValue } = require("sequelize/lib/utils");
 
 const UserSequelize = sequelize.define("UserSequelize", {
   name: {
@@ -14,6 +15,11 @@ const UserSequelize = sequelize.define("UserSequelize", {
   password: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  totalExpense:{
+    type: Sequelize.FLOAT,
+    allowNull:true,
+    defaultValue:0,
   },
   premiumUserPaymentReceipt: {
     type: DataTypes.STRING,

@@ -8,6 +8,7 @@ const UserData = require("../server/models/UserData");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
+const t = sequelize.transaction()
 const port = 3000;
 
 app.use(cors());
@@ -72,7 +73,8 @@ app.post("/user/login", async (req, res) => {
         { expiresIn: "1h" }
       );
       let receipt = user.premiumUserPaymentReceipt
-      res.json({ message: "Login successful", token,receipt });
+      // let totalExpense = user.totalExpense
+      res.json({ message: "Login successful", token,receipt});
     } else {
       res.status(403).send("Invalid password");
     }
@@ -84,12 +86,18 @@ app.post("/user/login", async (req, res) => {
 
 // Add Expense Route
 app.post("/", authenticateToken, async (req, res) => {
-  const { amount, category, description } = req.body;
+  const { amount, category, description,totalExpense } = req.body;
   const userId = req.user.userId;
+  const t = await sequelize.transaction();
   try {
-    await UserData.create({ amount, category, description, userId });
+    await UserData.create({ amount, category, description, userId }, { transaction: t });
+    const user = await UserSequelize.findOne({ where: { id: userId } },{transaction:t});
+    const totalExpense = parseFloat(req.body.totalExpense);
+    await user.update({ totalExpense },{transaction:t});
+    await t.commit();
     res.status(201).send("Expense added successfully");
   } catch (error) {
+    await t.rollback()
     console.error("Error adding expense:", error.message);
     res.status(500).send("Internal Server Error");
   }
@@ -100,8 +108,9 @@ app.get("/", authenticateToken, async (req, res) => {
   const userId = req.user.userId;
   try {
     const expenses = await UserData.findAll({ where: { userId } });
+    const total = await UserSequelize.findAll({ where: { id:userId } });
     console.log(expenses,"expenses")
-    res.json(expenses);
+    res.json({expenses,total});
   } catch (error) {
     console.error("Error fetching expenses:", error.message);
     res.status(500).send("Internal Server Error");
@@ -112,20 +121,30 @@ app.get("/", authenticateToken, async (req, res) => {
 app.delete("/:id", async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization?.split(" ")[1];
+  const decoded = jwt.verify(token, JWT_SECRET);
+  const userId = decoded.userId;
+  const t = await sequelize.transaction();
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const result = await UserData.destroy({
-      where: {
-        id,
-        userId: decoded.userId,
-      },
-    });
+    const expense = await UserData.findOne({where:{id,userId}},{transaction:t});
+    if(!expense){
+      return res.status(404).send("Expense not found");
+    }
+    const expenseAmount = parseFloat(expense.amount);
+    const result = await UserData.destroy({ where: {id,userId}},{transaction:t});
     if (result) {
+      const user = await UserSequelize.findOne({where:{id:userId}},{transaction:t})
+      const updatedTotalExpense = user.totalExpense - expenseAmount;
+      await user.update({totalExpense:updatedTotalExpense},{transaction:t})
+
+      await t.commit();
       res.status(200).send("Expense deleted successfully");
     } else {
+      await t.rollback();
       res.status(404).send("Expense not found or not authorized");
     }
   } catch (error) {
+    await t.rollback();
     console.error("Error deleting expense:", error.message);
     res.status(500).send("Internal Server Error");
   }
