@@ -1,30 +1,28 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import styles from "./Expense.module.css";
 import React, { useEffect, useRef, useState } from "react";
-// import { setPremiumUser } from "../../Store/authSlice";
-
+import { setTotalExpense } from "../../Store/authSlice";
 
 const Expense = () => {
   const [expenseData, getExpenseData] = useState([]);
   const [update, setUpdate] = useState(false); 
   const [data, setData] = useState([]);
-  const [dropDown,showDropDown] = useState(false);
+  const [dropDown, showDropDown] = useState(false);
+  const [ExpenseTotal, setExpenseTotal] = useState(0);
   const formRef = useRef(null);
-  const premiumUser = useSelector((state)=>state.auth.premiumUser)
-
+  const premiumUser = useSelector((state) => state.auth.premiumUser);
   const token = useSelector((state) => state.auth.token);
-  console.log(token, "userIdExpense");
-
+  
   const submitHandler = async (e) => {
     e.preventDefault();
-  
     const formData = new FormData(e.target);
     const data = {
       amount: formData.get("amount"),
       category: formData.get("category"),
       description: formData.get("description"),
+      totalExpense: Number(ExpenseTotal) + Number(formData.get("amount")),
     };
-  
+    
     try {
       const response = await fetch("http://localhost:3000/", {
         method: "POST",
@@ -32,7 +30,7 @@ const Expense = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
   
       if (response.ok) {
@@ -41,9 +39,7 @@ const Expense = () => {
         console.error("Failed to add expense");
       }
   
-      if (formRef.current) {
-        formRef.current.reset();
-      }
+      formRef.current?.reset();
     } catch (error) {
       console.error("Error adding expense:", error);
     }
@@ -55,13 +51,16 @@ const Expense = () => {
       try {
         const response = await fetch("http://localhost:3000", {
           headers: {
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`,
           },
         });
-        const data = await response.json();
-        console.log("getData", data); 
-        getExpenseData(data);
-        console.log("premiumUserPaymentReceipt", data);
+        const { expenses, total } = await response.json();
+        console.log("TOTAL",total)
+        total.map((data)=>{
+          setExpenseTotal(data.totalExpense)
+        })
+        // setExpenseTotal(total);
+        getExpenseData(expenses);
       } catch (error) {
         console.error("Error fetching expense data:", error);
       }
@@ -74,13 +73,13 @@ const Expense = () => {
       const response = await fetch(`http://localhost:3000/${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
         console.log("Expense deleted successfully");
-        setUpdate(!update); // Re-fetch data after deletion
+        setUpdate(!update);
       } else {
         console.error("Failed to delete expense");
       }
@@ -92,7 +91,7 @@ const Expense = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('http://localhost:3000/data', { 
+        const res = await fetch('http://localhost:3000/data', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -103,24 +102,24 @@ const Expense = () => {
         }
 
         const data = await res.json();
-        // Calculate total amount and sort data
+        console.log("PRE",data)
         const sortedData = data.map(user => {
-          const totalAmount = user.UserData.reduce((sum, transaction) => sum + transaction.amount, 0);
-          return { ...user, totalAmount };
-        }).sort((a, b) => b.totalAmount - a.totalAmount);
+          return { ...user };
+        }).sort((a, b) => b.totalExpense - a.totalExpense);
 
         setData(sortedData);
-        console.log('Leadership board data', sortedData);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
-  }, [token]);
-const showSlide = () => {
-  showDropDown(!dropDown)
-}
+  }, [token,update]);
+
+  const showSlide = () => {
+    showDropDown(!dropDown);
+  };
+
   return (
     <div className={styles.mainContainer}>
       <div className={styles.expenseInput}>
@@ -159,8 +158,7 @@ const showSlide = () => {
       <div className={styles.subContainer}>
         <div className={styles.expensesOutput}>
           <ul>
-            {
-              expenseData.length === 0 ? <p>Data Not Found</p> :
+            {expenseData.length === 0 ? <p>Data Not Found</p> :
               expenseData.map((expense) => (
                 <li key={expense.id}>
                   <div className={styles.data}>
@@ -169,31 +167,31 @@ const showSlide = () => {
                     <p>{expense.description}</p>
                   </div>
                   <div className={styles.DataBtns}>
-                    <button>Edit</button>
+                    {/* <button>Edit</button> */}
                     <button onClick={() => deleteExpense(expense.id)}>Delete</button>
                   </div>
                 </li>
-              ))
-            }
+              ))}
           </ul>
         </div>
-        {!premiumUser && <div className={styles.boards}>
-        <button className={styles.btns} onClick={showSlide}>Show Leaderboard</button>
-        {dropDown && <div className={styles.board}>
-          <h5>Leadership Board</h5>
-          <ul>
-            {
-              data.length === 0 ? <p>No data found</p> :
-              data.map((user) => (
-                <li key={user.id}>
-                  {user.name}: {user.totalAmount}
-                </li>
-              ))
-            }
-          </ul>
-        </div>}
-        </div>
-        }
+        {!premiumUser && (
+          <div className={styles.boards}>
+            <button className={styles.btns} onClick={showSlide}>Show Leaderboard</button>
+            {dropDown && (
+              <div className={styles.board}>
+                <h5>Leadership Board</h5>
+                <ul>
+                  {data.length === 0 ? <p>No data found</p> :
+                    data.map((user) => (
+                      <li key={user.id}>
+                        {user.name}: {user.totalExpense}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
