@@ -68,6 +68,7 @@ const LoginPage = () => {
                 </form>
                 {error && <p className={styles.error}>{error}</p>}
                 <p>Don't have an account? <Link to="/signup">Register</Link></p>
+                <p><Link to="/password/forgotpassword">Forget Password</Link></p>
             </div>
         </div>
     );

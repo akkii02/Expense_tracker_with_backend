@@ -6,6 +6,7 @@ import LoginPage from "./components/Registration/LoginPage";
 import Expense from "./components/Expenses/Expense";
 import { useSelector } from "react-redux";
 import Navbar from "./components/Navbar/Navbar";
+import ForgetPassword from "./components/Registration/ForgetPassword";
 
 function App() {
   const isLogin = useSelector((state)=>state.auth.isLogin)
@@ -15,6 +16,7 @@ function App() {
     <Routes> 
         <Route path="/" element={isLogin ? <Expense/> :<LoginPage/>} />
         <Route path="/signup" element={<RegistrationPage/>} />
+        <Route path="/password/forgotpassword" element={<ForgetPassword/>} />
         {/* <Route path="/expense" element={<Expense/>}/> */}
     </Routes>
 </Router>

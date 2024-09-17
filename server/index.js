@@ -8,6 +8,7 @@ const UserData = require("../server/models/UserData");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
+const nodemailer = require('nodemailer');
 const t = sequelize.transaction()
 const port = 3000;
 
@@ -150,16 +151,16 @@ app.delete("/:id", async (req, res) => {
   }
 });
 
-// Create Order Route for Razorpay
+
 app.post("/create-order", async (req, res) => {
-    const { amount, currency } = req.body; // Amount in INR from frontend
+    const { amount, currency } = req.body; 
   
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
   
     const options = {
-      amount: Math.round(amount*100), // Convert INR to paise (e.g., 500 INR => 50000 paise)
+      amount: Math.round(amount*100), 
       currency: currency || "INR",
       receipt: `receipt_order_${Math.random() * 100000}`,
       payment_capture: 1,
@@ -214,6 +215,36 @@ app.post("/create-order", async (req, res) => {
     }
   });
   
+  app.post("/password/forgotpassword",(req,res)=>{
+    const {email} = req.body;
+    try{
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth:{
+        user:'akshayakki01997@gmail.com',
+        pass: process.env.APP_PASS
+      }
+    });
+    let mailOptions = {
+      from:'akshayakki01997@gmail.com',
+      to:email,
+      subject:"Password Reset",
+      text:`You requested a password reset. Click the following link to reset your password`,
+    };
+    transporter.sendMail(mailOptions,function(error,info){
+      if(error){
+        console.log(error);
+        return res.status(500).send("Failed to send email");
+      }else{
+        console.log('Email sent:'+ info.response);
+        res.status(200).send("Password reset link sent to your email");
+      }
+    });
+  }catch(err){
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+  })
 
 // Define relationships
 UserSequelize.hasMany(UserData, { foreignKey: "userId" });
