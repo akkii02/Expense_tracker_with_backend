@@ -193,6 +193,11 @@ const Expense = () => {
           </div>
         )}
       </div>
+      <div style={{display:"flex", justifyContent:"center",alignItems:"center"}}>
+      {!premiumUser && (
+      <button className={styles.downloadBtn}>Download report</button>
+      )}
+      </div>
     </div>
   );
 };

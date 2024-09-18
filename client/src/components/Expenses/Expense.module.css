@@ -157,3 +157,9 @@ h5{
   height: 50px;
   background-color: #218838;
 }
+.downloadBtn{
+  width: 250px;
+  height: 50px;
+  font-family: 'Poppins', sans-serif;
+margin: 30px auto;
+}
