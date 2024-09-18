@@ -5,10 +5,12 @@ const cors = require("cors");
 const sequelize = require("../server/utils/db");
 const UserSequelize = require("../server/models/UserSequelize");
 const UserData = require("../server/models/UserData");
+const ForgotPasswordRequests = require('../server/models/ForgotPasswordRequests');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
 const nodemailer = require('nodemailer');
+const { v4: uuidv4 } = require('uuid');
 const t = sequelize.transaction()
 const port = 3000;
 
@@ -215,40 +217,99 @@ app.post("/create-order", async (req, res) => {
     }
   });
   
-  app.post("/password/forgotpassword",(req,res)=>{
-    const {email} = req.body;
-    try{
-    let transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth:{
-        user:'akshayakki01997@gmail.com',
-        pass: process.env.APP_PASS
+  app.post("/password/forgotpassword", async (req, res) => {
+    const { email } = req.body;
+    try {
+      const user = await UserSequelize.findOne({ where: { email } });
+      if (user) {
+        const id = uuidv4();
+        const expiresBy = new Date(Date.now() + 3600000); // Link expires in 1 hour
+        await ForgotPasswordRequests.create({ id, userId: user.id, active: true, expiresby: expiresBy });
+  
+        let transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'akshayakki01997@gmail.com', // replace with your email
+            pass: process.env.EMAIL_PASSWORD, // make sure this is set in your environment
+          },
+        });
+  
+        let mailOptions = {
+          from: 'akshayakki01997@gmail.com', // replace with your email
+          to: email,
+          subject: "Password Reset",
+          html: `You requested a password reset. Click the following link to reset your password: <a href="http://localhost:3001/password/reset/${id}">Reset password</a>`,
+        };
+  
+        transporter.sendMail(mailOptions, function (error, info) {
+          if (error) {
+            console.log(error);
+            return res.status(500).send("Failed to send email");
+          } else {
+            console.log('Email sent: ' + info.response);
+            res.status(200).send("Password reset link sent to your email");
+          }
+        });
+      } else {
+        res.status(404).send("User not found");
       }
-    });
-    let mailOptions = {
-      from:'akshayakki01997@gmail.com',
-      to:email,
-      subject:"Password Reset",
-      text:`You requested a password reset. Click the following link to reset your password`,
-    };
-    transporter.sendMail(mailOptions,function(error,info){
-      if(error){
-        console.log(error);
-        return res.status(500).send("Failed to send email");
-      }else{
-        console.log('Email sent:'+ info.response);
-        res.status(200).send("Password reset link sent to your email");
-      }
-    });
-  }catch(err){
-    console.error(err);
-    res.status(500).send("Internal Server Error");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+  
+ // Password Reset Route
+// Password Reset Route
+app.post("/password/reset/:id", async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  // Validate the presence of newPassword
+  if (!newPassword) {
+    return res.status(400).send("New password is required.");
   }
-  })
+
+  // You can add password strength validation here
+
+  try {
+    const request = await ForgotPasswordRequests.findOne({ where: { id, active: true } });
+    if (!request) {
+      return res.status(404).send("Invalid or expired password reset link.");
+    }
+
+    // Check if the link has expired
+    if (new Date() > new Date(request.expiresby)) {
+      return res.status(400).send("Password reset link has expired.");
+    }
+
+    const user = await UserSequelize.findByPk(request.userId);
+    if (user) {
+      const hash = await bcrypt.hash(newPassword, 10);
+      await user.update({ password: hash });
+
+      // Deactivate the request after use
+      await request.update({ active: false });
+
+      res.status(200).send("Password has been reset successfully.");
+    } else {
+      res.status(404).send("User not found.");
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error.");
+  }
+});
+
+  
 
 // Define relationships
 UserSequelize.hasMany(UserData, { foreignKey: "userId" });
 UserData.belongsTo(UserSequelize, { foreignKey: "userId" });
+
+// Define relationships
+UserSequelize.hasMany(ForgotPasswordRequests, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ForgotPasswordRequests.belongsTo(UserSequelize, { foreignKey: 'userId' });
 
 // Sync Sequelize models and start server
 sequelize
